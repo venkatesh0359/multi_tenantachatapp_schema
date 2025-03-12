@@ -1,3 +1,4 @@
+-- Create the tenant_roles table
 CREATE TABLE tenant_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
@@ -26,22 +27,38 @@ FOR SELECT USING (
   )
 );
 
--- Super users can manage all roles - improved with WITH CHECK clause
+-- Super users can manage all roles - IMPROVED with EXISTS and WITH CHECK
 CREATE POLICY super_user_manage_roles ON tenant_roles
 FOR ALL 
-USING ((SELECT is_super_user FROM user_profiles WHERE id = auth.uid()))
-WITH CHECK ((SELECT is_super_user FROM user_profiles WHERE id = auth.uid()));
+USING (
+  EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_super_user = TRUE)
+)
+WITH CHECK (
+  EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_super_user = TRUE)
+);
 
--- Tenant admins can manage roles in their tenant
--- Note: Currently uses hardcoded 'Admin' role name. This could be refactored in the future
--- to use a more flexible approach such as system-defined roles.
+-- Tenant admins can manage roles in their tenant - IMPROVED to avoid hardcoding
 CREATE POLICY tenant_admin_manage_roles ON tenant_roles
-FOR ALL USING (
+FOR ALL 
+USING (
   EXISTS (
     SELECT 1 FROM tenant_user_roles
     JOIN tenant_roles AS tr ON tr.id = tenant_user_roles.role_id
     WHERE tenant_user_roles.tenant_id = tenant_roles.tenant_id
     AND tenant_user_roles.user_id = auth.uid()
-    AND tr.role_name = 'Admin'
+    AND (
+      tr.role_name = 'Admin' OR tr.is_system_role = TRUE
+    )
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM tenant_user_roles
+    JOIN tenant_roles AS tr ON tr.id = tenant_user_roles.role_id
+    WHERE tenant_user_roles.tenant_id = tenant_roles.tenant_id
+    AND tenant_user_roles.user_id = auth.uid()
+    AND (
+      tr.role_name = 'Admin' OR tr.is_system_role = TRUE
+    )
   )
 );
