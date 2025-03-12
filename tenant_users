@@ -1,9 +1,9 @@
 CREATE TABLE tenant_users (
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE RESTRICT,  -- Changed from CASCADE to RESTRICT
+  user_id UUID REFERENCES auth.users(id) ON DELETE RESTRICT, 
   is_active BOOLEAN DEFAULT TRUE,  -- Added for soft deletion
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT 'infinity'::timestamp,  -- Track when the user was removed
+  deactivated_at TIMESTAMP WITH TIME ZONE DEFAULT 'infinity'::timestamp,  
   PRIMARY KEY (tenant_id, user_id)
 );
 
