@@ -81,5 +81,4 @@ FOR UPDATE USING (
   AND is_deleted = FALSE
 );
 
--- Remove redundant policies since we now have the super_user_* policies
--- Keep only one set of policies for clarity
+
